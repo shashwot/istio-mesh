@@ -125,7 +125,7 @@ spec:
 ```
 Apply the gateway configuration.
 ```
-$ kubectl apply -f gateway.yml
+$ kubectl apply -f gateway.yml -n testing
 ```
 <br>
 <hr>
@@ -163,7 +163,7 @@ spec:
 ```
 Apply the virtualservice configuration.
 ```
-$ kubectl apply -f virtual-service.yml
+$ kubectl apply -f virtual-service.yml -n testing
 ```
 We can check if the website is up and running using the following commands:
 ```
@@ -255,7 +255,7 @@ spec:
 ```
 Apply the virtualservice configuration.
 ```
-$ kubectl apply -f virtual-service-all.yml
+$ kubectl apply -f virtual-service-all.yml -n testing
 ```
 Here I have introduced the concept of circuit breaker, http header match with uri, timeouts, mirroring, weights, etc.
 
@@ -353,7 +353,7 @@ spec:
 ```
 Apply the destination-rule configuration.
 ```
-$ kubectl apply -f destination-rule-all.yaml
+$ kubectl apply -f destination-rule-all.yaml -n testing
 ```
 Here we have set the destination rule with trafficPolicy to know the behaviour of the service mesh.
 
@@ -376,7 +376,7 @@ spec:
 ```
 Apply the enable-strict-mode configuration.
 ```
-$ kubectl apply -f enable-strict-mode.yml
+$ kubectl apply -f enable-strict-mode.yml -n testing
 ```
 
 12. You can visualise these traffics with Kiali dashboard.
