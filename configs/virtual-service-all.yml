@@ -1,0 +1,76 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: productpage
+spec:
+  hosts:
+  - productpage
+  http:
+  - route:
+    - destination:
+        host: productpage
+        subset: v1
+    retries:    # configure 2 retries with 1s timeout and gateway-error,connect-failure,refused-stream
+      attempts: 2
+      perTryTimeout: 1s
+      retryOn: gateway-error,connect-failure,refused-stream
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: reviews
+spec:
+  hosts:
+  - reviews
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+        user-agent:
+          regex: ".*Chrome.*"
+        #cookie:
+        #  regex: "^(.*?;)?(user=packtpub)(;.*)?$"
+    route:
+    - destination:
+        host: reviews
+        subset: v2
+    timeout: 2s
+  - route:
+    - destination:
+        host: reviews
+        subset: v1
+      #weight: 100
+    mirror: 		#Shift Live Traffic to this subset for testing before going to production
+      host: reviews
+      subset: v3
+    mirror_percent: 100
+    timeout: 2s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: ratings
+spec:
+  hosts:
+  - ratings
+  http:
+  - route:
+    - destination:
+        host: ratings
+        subset: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: details
+spec:
+  hosts:
+  - details
+  http:
+  - route:
+    - destination:
+        host: details
+        subset: v1
+---
+

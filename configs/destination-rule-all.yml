@@ -1,0 +1,77 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: productpage
+spec:
+  host: productpage
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 50
+        connectTimeout: 1s
+        tcpKeepalive:
+          time: 3600s
+          interval: 60s
+      http:
+       maxRetries: 3
+       maxRequestsPerConnection: 50
+       idleTimeout: 60s
+       http1MaxPendingRequests: 25
+       http2MaxRequests: 5
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: reviews
+spec:
+  host: reviews
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+  - name: v3
+    labels:
+      version: v3
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: ratings
+spec:
+  host: ratings
+  trafficPolicy:
+    outlierDetection:
+      consecutiveErrors: 5	# 5 upstream errors (502,503,504)
+      interval: 30s		# Sliding window of 30s
+      baseEjectionTime: 1m	# eject upstream for 1 min
+      maxEjectionPercent: 50	# max 50% of upstream hosts ejected
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: details
+spec:
+  host: details
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+  - name: v2
+    labels:
+      version: v2
+---
+
