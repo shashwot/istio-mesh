@@ -1,0 +1,158 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+  namespace: cert-manager
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: shashwot@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: istio
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: www.example.com
+  namespace: istio-system
+spec:
+  secretName: example-cert-files
+  issuerRef:
+    name: letsencrypt-prod
+  commonName: www.example.com
+  dnsName:
+  - www.example.com
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-gateway-config
+spec:
+  selector:
+    istio: ingressgateway # istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+     - 'example.com'
+     - 'www.example.com'
+    tls:
+      httpsRedirect: true
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    hosts:
+     - 'example.com'
+     - 'www.example.com'
+    tls:
+      mode: SIMPLE
+      minProtocolVersion: TLSV1_2
+      credentialName: example-cert-files
+---
+## Virtual Service NON-WWW
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: non-www-redirected
+spec:
+  hosts:
+  - example.com
+  gateways:
+  - istio-gateway-config
+  http:
+  - match:
+    - uri:
+        prefix: /
+    redirect:
+      uri: /
+      authority: www.example.com
+---
+## Virtual Service WWW
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: www-redirected
+spec:
+  hosts:
+  - www.example.com
+  gateways:
+  - istio-gateway-config
+  http:
+  - match:
+    - uri:
+        prefix: / 
+    route:
+    - destination:
+        host: nginx.default.svc.cluster.local
+        subset: live
+      weight: 100    
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: nginx
+spec:
+  host: nginx.default.svc.cluster.local
+  subsets:
+  - name: live
+    labels:
+      app: nginx
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: api-gateway
+spec:
+  hosts:
+  - "api-gateway.default.svc.cluster.local"
+  http:
+  - match:
+    route:
+    - destination:
+        host: api-gateway.default.svc.cluster.local
+        subset: api-gateway-live
+      weight: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: api-gateway
+spec:
+  host: api-gateway.default.svc.cluster.local
+  subsets:
+  - name: api-gateway-live
+    labels:
+      app: api-gateway
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: position-tracker
+spec:
+  hosts:
+  - "position-tracker.default.svc.cluster.local"
+  http:
+  - match:
+    route:
+    - destination:
+        host: position-tracker.default.svc.cluster.local
+        subset: position-tracker-live
+      weight: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: position-tracker
+spec:
+  host: position-tracker.default.svc.cluster.local
+  subsets:
+  - name: position-tracker-live
+    labels:
+      app: position-tracker
